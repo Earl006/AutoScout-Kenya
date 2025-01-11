@@ -35,17 +35,20 @@ AutoScout Kenya is the premier car comparison platform designed specifically for
 
 ```bash
 # Clone the repository
-git clone https://github.com/Earl006/autoscout-kenya.git
+git clone https://github.com/Earl006/AutoScout-Kenya.git
 
 # Install dependencies
-cd autoscout-kenya
+cd AutoScout-Kenya
 npm install
 
 # Set up environment variables
 cp .env.example .env
 
 # Run database migrations
-npm run migrate
+npx prisma migrate dev
+
+# Seed database
+npm run seed
 
 # Start development server
 npm run dev
@@ -57,3 +60,4 @@ Contact us at info@autoscoutkenya.com
 ### Developers
 - SteveTom - [GitHub](https://github.com/Raccoon254)
 - Earljoe Kadima - [GitHub](https://github.com/Earl006)
+- Maxwell Furaha - [GitHub](https://github.com/Simply-Furaha)
