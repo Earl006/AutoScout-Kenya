@@ -1,0 +1,139 @@
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// User model for authentication and preferences
+model User {
+  id                String     @id @default(cuid())
+  email             String     @unique
+  name              String?
+  password          String
+  role              UserRole   @default(USER)
+  isVerified        Boolean    @default(false)
+  verificationToken String?    @unique
+  resetToken        String?    @unique
+  resetTokenExpiry  DateTime?
+  createdAt         DateTime   @default(now())
+  updatedAt         DateTime   @updatedAt
+  favorites         Favorite[]
+  alerts            Alert[]
+  searches          Search[]
+}
+
+enum UserRole {
+  USER
+  ADMIN
+}
+
+// Car model representing standardized vehicle information
+model Car {
+  id           String         @id @default(cuid())
+  make         String // e.g., Toyota
+  model        String // e.g., Corolla
+  year         Int
+  bodyType     String? // e.g., Sedan, SUV
+  fuelType     String? // e.g., Petrol, Diesel
+  transmission String? // e.g., Automatic, Manual
+  engineSize   Float? // in CC
+  mileage      Int? // in KM
+  specs        Json? // Additional specifications
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  listings     Listing[]
+  priceHistory PriceHistory[]
+}
+
+// Listing model for individual car listings from various sources
+model Listing {
+  id          String     @id @default(cuid())
+  carId       String
+  car         Car        @relation(fields: [carId], references: [id])
+  sourceId    String
+  source      Source     @relation(fields: [sourceId], references: [id])
+  externalId  String // ID from source platform
+  url         String
+  price       Float
+  currency    String     @default("KES")
+  location    String?
+  description String?
+  images      Json? // Image URLs
+  active      Boolean    @default(true)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  favorites   Favorite[]
+
+  @@unique([sourceId, externalId])
+}
+
+// Source model for different car platforms
+model Source {
+  id        String    @id @default(cuid())
+  name      String    @unique // e.g., Cheki, JijiKE
+  baseUrl   String
+  active    Boolean   @default(true)
+  config    Json // Crawler configuration
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  listings  Listing[]
+}
+
+// PriceHistory model for tracking price changes
+model PriceHistory {
+  id       String   @id @default(cuid())
+  carId    String
+  car      Car      @relation(fields: [carId], references: [id])
+  price    Float
+  currency String   @default("KES")
+  date     DateTime @default(now())
+}
+
+// Favorite model for user's saved listings
+model Favorite {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  listingId String
+  listing   Listing  @relation(fields: [listingId], references: [id])
+  createdAt DateTime @default(now())
+
+  @@unique([userId, listingId])
+}
+
+// Alert model for price notifications
+model Alert {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  make      String?
+  model     String?
+  maxPrice  Float?
+  minPrice  Float?
+  year      Int?
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// Search model for saving user searches
+model Search {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  criteria  Json // Search parameters
+  createdAt DateTime @default(now())
+}
+
+// CrawlerLog model for monitoring crawler activities
+model CrawlerLog {
+  id        String   @id @default(cuid())
+  sourceId  String
+  status    String // SUCCESS, ERROR, WARNING
+  message   String
+  metadata  Json? // Additional log information
+  createdAt DateTime @default(now())
+}
