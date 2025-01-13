@@ -26,8 +26,8 @@ AutoScout Kenya is the premier car comparison platform designed specifically for
 ### Getting Started
 #### Prerequisites
 
-- Node.js 
-- PostgreSQL 
+- Node.js
+- PostgreSQL
 - Angular CLI
 - TypeScript
 
@@ -54,7 +54,7 @@ npm run seed
 npm run dev
 ```
 ### Contributing
-We welcome contributions from the community! 
+We welcome contributions from the community!
 Contact us at info@autoscoutkenya.com
 
 ### Developers
