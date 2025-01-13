@@ -1,4 +1,5 @@
-import puppeteer from 'puppeteer';
+// app/lib/crawlers/base.js
+import { browserManager } from '../services/browserManager';
 import prisma from "@/app/lib/prisma";
 import { normalize } from '../processors/normalizer';
 import { deduplicate } from '../processors/deduplicator';
@@ -7,20 +8,21 @@ import { logger } from '../monitoring/logger';
 export class BaseCrawler {
     constructor(config) {
         this.config = config;
-        this.browser = null;
     }
 
     async initialize() {
-        this.browser = await puppeteer.launch({
-            headless: 'new',
-            args: ['--no-sandbox']
-        });
+        // Get the shared browser instance
+        return await browserManager.getBrowser();
+    }
+
+    async getBrowser() {
+        return await browserManager.getBrowser();
     }
 
     async crawl(url) {
-        if (!this.browser) await this.initialize();
+        const browser = await this.getBrowser();
+        const page = await browser.newPage();
 
-        const page = await this.browser.newPage();
         try {
             // Set rate limiting
             await page.setRequestInterception(true);
@@ -48,13 +50,13 @@ export class BaseCrawler {
             logger.error(`Error crawling ${url}: ${error.message}`);
             throw error;
         } finally {
-            await page.close();
+            await page.close().catch(console.error);
         }
     }
 
     async save(data) {
         // Save to database using Prisma
-        return await prisma.car.create({
+        return prisma.car.create({
             data: {
                 ...data,
                 listings: {

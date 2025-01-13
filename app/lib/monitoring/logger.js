@@ -37,5 +37,24 @@ export const logger = {
         } catch (error) {
             console.error('Error logging error:', error);
         }
+    },
+
+    async warn(message, metadata = {}) {
+        try {
+            // Convert metadata to a serializable format
+            const serializedMetadata = JSON.parse(JSON.stringify(metadata));
+
+            await prisma.crawlerLog.create({
+                data: {
+                    sourceId: metadata.sourceId ?? "Unknown",
+                    status: 'WARN',
+                    message,
+                    metadata: serializedMetadata
+                }
+            });
+            console.warn(`[WARN] ${message}`, serializedMetadata);
+        } catch (error) {
+            console.error('Error logging warn:', error);
+        }
     }
 };

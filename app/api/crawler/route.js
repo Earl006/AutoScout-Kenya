@@ -3,35 +3,27 @@ import chekiCrawler from "@/app/lib/crawlers/cheki";
 import { logger } from "@/app/lib/monitoring/logger";
 
 export async function GET(request) {
-    let browser = null;
+    let page = null;
     try {
-        // Extract URL parameters
         const { searchParams } = new URL(request.url);
         const url = searchParams.get('url') || 'https://autochek.africa/ke/cars-for-sale';
         const testMode = searchParams.get('testMode') === 'true';
 
         await logger.info('Starting test crawler for Cheki', { url, testMode, sourceId: 'Cheki' });
 
-        // Initialize crawler
         if (!testMode) {
-            // Real crawling mode - saves to database
             await chekiCrawler.crawl(url);
-
             return NextResponse.json({
                 success: true,
                 message: 'Crawler completed successfully. Data saved to database.'
             });
         } else {
-            // Test mode - just returns the extracted data
-            if (!chekiCrawler.browser) {
-                await chekiCrawler.initialize();
-            }
-            browser = chekiCrawler.browser;
+            const browser = await chekiCrawler.getBrowser();
+            page = await browser.newPage();
 
-            const page = await browser.newPage();
             await page.goto(url, {
                 waitUntil: 'networkidle0',
-                timeout: 60000 // Increase timeout to 60 seconds
+                timeout: 60000
             });
 
             const listings = await chekiCrawler.extractListings(page);
@@ -43,8 +35,6 @@ export async function GET(request) {
             const normalizedListings = await Promise.all(
                 listings.map(listing => chekiCrawler.normalizeData(listing))
             );
-
-            await page.close();
 
             return NextResponse.json({
                 success: true,
@@ -71,20 +61,13 @@ export async function GET(request) {
             { status: 500 }
         );
     } finally {
-        // Ensure browser is closed in test mode
-        if (browser) {
-            try {
-                await browser.close();
-            } catch (error) {
-                console.error('Error closing browser:', error);
-            }
+        if (page) {
+            await page.close().catch(console.error);
         }
     }
 }
 
-// POST endpoint for specific search queries
 export async function POST(request) {
-    let browser = null;
     let page = null;
 
     try {
@@ -98,10 +81,9 @@ export async function POST(request) {
             maxYear,
             location,
             pageNumber = 1,
-            maxPages = 1  // Default to 1 page, can be increased to crawl more
+            maxPages = 1
         } = body;
 
-        // Validate required parameters
         if (make && typeof make !== 'string') {
             return NextResponse.json({
                 success: false,
@@ -109,54 +91,41 @@ export async function POST(request) {
             }, { status: 400 });
         }
 
-        // Log search parameters
         await logger.info('Starting crawler search', {
             parameters: {
                 make, model, minPrice, maxPrice, minYear, maxYear, location, pageNumber, maxPages
             }
         });
 
-        // Initialize crawler and browser
-        if (!chekiCrawler.browser) {
-            await chekiCrawler.initialize();
-        }
-        browser = chekiCrawler.browser;
+        const browser = await chekiCrawler.getBrowser();
         page = await browser.newPage();
 
-        // Set viewport and user agent
         await page.setViewport({ width: 1920, height: 1080 });
         await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36');
 
-        // Build base URL with filters
         const baseUrl = buildFilterUrl({
             make, model, minPrice, maxPrice, minYear, maxYear, location
         });
 
-        // Initialize results array
         let allListings = [];
         let currentPage = pageNumber;
         let hasNextPage = true;
 
-        // Crawl pages until no more results or max pages reached
         while (hasNextPage && currentPage <= maxPages) {
             const pageUrl = `${baseUrl}${baseUrl.includes('?') ? '&' : '?'}page_number=${currentPage}`;
-
             await logger.info(`Crawling page ${currentPage}`, { url: pageUrl });
 
             try {
-                // Navigate to page
                 await page.goto(pageUrl, {
                     waitUntil: 'networkidle0',
                     timeout: 60000
                 });
 
-                // Wait for results or no results indicator
                 await Promise.race([
                     page.waitForSelector('.MuiGrid-item', { timeout: 10000 }),
                     page.waitForSelector('.no-results', { timeout: 10000 })
                 ]);
 
-                // Extract listings from current page
                 const pageListings = await chekiCrawler.extractListings(page);
 
                 if (pageListings && pageListings.length > 0) {
@@ -176,7 +145,6 @@ export async function POST(request) {
             }
         }
 
-        // Normalize all collected listings
         const normalizedListings = await Promise.all(
             allListings.map(listing => chekiCrawler.normalizeData(listing))
         );
@@ -213,9 +181,6 @@ export async function POST(request) {
     } finally {
         if (page) {
             await page.close().catch(console.error);
-        }
-        if (browser) {
-            await browser.close().catch(console.error);
         }
     }
 }
