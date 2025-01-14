@@ -4,6 +4,7 @@ import { logger } from '../monitoring/logger';
 
 class ChekiCrawler extends BaseCrawler {
     constructor() {
+
         super({
             name: 'cheki',
             baseUrl: 'https://autochek.africa/ke',
@@ -274,6 +275,7 @@ class ChekiCrawler extends BaseCrawler {
         const model = titleParts.slice(2).join(' ');
 
         return {
+            title: listing.title,
             make,
             model,
             year,

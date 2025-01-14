@@ -233,6 +233,7 @@ const ComparisonTable = ({ cars }) => {
                 </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200">
+
                 {cars.map((car) => {
                     const priceAnalysis = getPriceAnalysis(car.price);
                     const PriceIcon = priceAnalysis.icon;
@@ -251,15 +252,15 @@ const ComparisonTable = ({ cars }) => {
                         >
                             <td className="py-4 px-6">
                                 <div className="flex items-center">
-                                    <div className="h-10 w-10 flex-shrink-0">
+                                    <div className="h-44 w-44 flex-shrink-0">
                                         {car.images?.[0] ? (
-                                            <img className="h-10 w-10 rounded-lg object-cover" src={car.images[0]} alt="" />
+                                            <img className="h-44 w-44 rounded-lg object-cover" src={car.images[0]} alt="" />
                                         ) : (
-                                            <Car className="h-10 w-10 text-gray-400" />
+                                            <Car className="h-44 w-44 text-gray-400" />
                                         )}
                                     </div>
                                     <div className="ml-4">
-                                        <div className="font-medium text-gray-900">{car.title}</div>
+                                        <div className="font-medium text-gray-900">{car.title ?? 'N/A'}</div>
                                         <div className="text-sm text-gray-500">{car.specs.engineSize}cc</div>
                                     </div>
                                 </div>
@@ -302,7 +303,7 @@ const CarComparison = () => {
     const handleSearch = async (filters) => {
         setLoading(true);
         try {
-            const response = await fetch('/api/crawler', {
+            const response = await fetch('/api/crawler/cheki/', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(filters)
