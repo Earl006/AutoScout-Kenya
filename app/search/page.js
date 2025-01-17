@@ -303,7 +303,7 @@ const CarComparison = () => {
     const handleSearch = async (filters) => {
         setLoading(true);
         try {
-            const response = await fetch('/api/crawler/cheki/', {
+            const response = await fetch('/api/crawler/kaiandkaro/', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(filters)

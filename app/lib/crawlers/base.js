@@ -55,6 +55,9 @@ export class BaseCrawler {
     }
 
     async save(data) {
+
+        console.log('Final carData for Prisma', data);
+
         // Save to database using Prisma
         return prisma.car.create({
             data: {
